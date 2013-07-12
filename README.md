@@ -78,8 +78,9 @@ mo.remove("Profile", withId(id));
 assertEquals(ImmutableList.<Profile>of(), mo.query("Profile", new ProfileMapper(), new BasicDBObject()));
 ```
 
-The library also has 'micro ORM' which relies on the reflection and some considerations about the base classes, like
-having 'id' field in all the mapped objects, non-final fields and public parameterless constructor.
+The library also has minimalistic ORM which relies on the reflection and some considerations about the base classes,
+like having 'id' field in all the mapped objects, non-final fields and public parameterless constructor.
+
 If these constraints are followed by the user-defined domain objects - MappableMongoOperations can be used which is much
 simpler than MongoOperations object:
 

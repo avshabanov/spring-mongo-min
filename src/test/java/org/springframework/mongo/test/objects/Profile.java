@@ -3,7 +3,7 @@ package org.springframework.mongo.test.objects;
 /**
  * @author Alexander Shabanov
  */
-public class Profile extends TestDomainObject {
+public final class Profile extends TestDomainObject {
     private String id;
     private String name;
     private int age;

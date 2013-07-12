@@ -2,12 +2,9 @@ package org.springframework.mongo.mappable.support;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
-import org.bson.types.ObjectId;
-import org.springframework.core.convert.converter.Converter;
 import org.springframework.mongo.core.CursorMapper;
 import org.springframework.mongo.mappable.object.MappableClassLayout;
 import org.springframework.mongo.mappable.object.MappableDataObject;
-import org.springframework.mongo.support.MongoUtil;
 import org.springframework.util.Assert;
 
 import java.lang.reflect.Field;
@@ -19,16 +16,14 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * @author Alexander Shabanov
  */
-public final class MappableObjectsConfig {
-    /**
-     * Default name of the mappable objects
-     */
-    public static final String ID_FIELD = "id";
-
+final class MappableObjectsConfig {
     private Map<Class<? extends MappableDataObject>, DefaultMappableClassLayout> classLayoutMap =
             new ConcurrentHashMap<Class<? extends MappableDataObject>, DefaultMappableClassLayout>();
 
     public MappableClassLayout getLayout(Class<? extends MappableDataObject> dataObjectClass) {
+        // unlikely to trigger
+        Assert.state(MappableDataObject.class.isAssignableFrom(dataObjectClass), "Mappable class expected");
+
         return innerGetLayout(dataObjectClass);
     }
 
@@ -67,7 +62,7 @@ public final class MappableObjectsConfig {
             }
 
             for (final Field field : dataObjectClass.getDeclaredFields()) {
-                FieldDescriptor fieldDescriptor = new FieldDescriptor(field);
+                FieldDescriptor fieldDescriptor = new FieldDescriptor(field, MappableObjectsConfig.this);
                 fieldDescriptors.add(fieldDescriptor);
                 if (fieldDescriptor.isId()) {
                     if (this.idFieldDescriptor != null) {
@@ -158,71 +153,4 @@ public final class MappableObjectsConfig {
             };
         }
     }
-
-    private static final class FieldDescriptor {
-        private String mongoName;
-        private Field field;
-        private Converter<Object, Object> mongoToJavaConverter;
-        private Converter<Object, Object> javaToMongoConverter;
-
-        public FieldDescriptor(Field field) {
-            this.field = field;
-            if (ID_FIELD.equals(field.getName())) {
-                mongoName = MongoUtil.ID; // special case for _id field
-                if (String.class.equals(field.getType())) {
-                    mongoToJavaConverter = OBJECT_ID_STRING;
-                    javaToMongoConverter = STRING_TO_OBJECT_ID;
-                } else {
-                    throw new IllegalStateException("Field " + field + " is considered as an id field, " +
-                            "but it isn't of any known id type");
-                }
-            } else {
-                mongoName = field.getName();
-                mongoToJavaConverter = AS_IS;
-                javaToMongoConverter = AS_IS;
-            }
-        }
-
-        public boolean isId() {
-            return MongoUtil.ID.equals(mongoName);
-        }
-
-        public String getMongoName() {
-            return mongoName;
-        }
-
-        public Field getField() {
-            return field;
-        }
-
-        public Converter<Object, Object> getMongoToJavaConverter() {
-            return mongoToJavaConverter;
-        }
-
-        public Converter<Object, Object> getJavaToMongoConverter() {
-            return javaToMongoConverter;
-        }
-    }
-
-
-    private static final Converter<Object, Object> OBJECT_ID_STRING = new Converter<Object, Object>() {
-        @Override
-        public Object convert(Object source) {
-            return ((ObjectId) source).toStringMongod();
-        }
-    };
-
-    private static final Converter<Object, Object> STRING_TO_OBJECT_ID = new Converter<Object, Object>() {
-        @Override
-        public Object convert(Object source) {
-            return new ObjectId(source.toString(), false);
-        }
-    };
-
-    private static final Converter<Object, Object> AS_IS = new Converter<Object, Object>() {
-        @Override
-        public Object convert(Object source) {
-            return source;
-        }
-    };
 }
