@@ -1,4 +1,4 @@
-package org.springframework.mongo.test.fixture;
+package org.springframework.mongo.test.objects;
 
 /**
  * @author Alexander Shabanov
@@ -8,7 +8,12 @@ public class Profile extends TestDomainObject {
     private String name;
     private int age;
 
+    // for mappable mongo template
+    public Profile() {
+    }
+
     public Profile(String id, String name, int age) {
+        this();
         this.id = id;
         this.name = name;
         this.age = age;

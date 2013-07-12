@@ -31,7 +31,7 @@ import static org.springframework.mongo.support.MongoUtil.extractId;
  *
  * @author Alexander Shabanov
  */
-public class MongoTemplate implements MongoOperations {
+public final class MongoTemplate implements MongoOperations {
     @Autowired
     private DB db;
 

@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.mongo.core.CursorMapper;
 import org.springframework.mongo.core.MongoOperations;
 import org.springframework.mongo.test.MongoTestSupport;
-import org.springframework.mongo.test.fixture.Profile;
+import org.springframework.mongo.test.objects.Profile;
 import org.springframework.test.context.ContextConfiguration;
 
 import static org.junit.Assert.assertEquals;

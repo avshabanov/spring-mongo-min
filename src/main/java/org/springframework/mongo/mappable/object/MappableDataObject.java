@@ -1,4 +1,4 @@
-package org.springframework.mongo.object;
+package org.springframework.mongo.mappable.object;
 
 /**
  * Trait interface that designates mappable data object which in its turn "tells" underlying data

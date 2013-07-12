@@ -77,3 +77,37 @@ assertEquals(ImmutableList.of(new Profile(id, profile)),
 mo.remove("Profile", withId(id));
 assertEquals(ImmutableList.<Profile>of(), mo.query("Profile", new ProfileMapper(), new BasicDBObject()));
 ```
+
+The library also has 'micro ORM' which relies on the reflection and some considerations about the base classes, like
+having 'id' field in all the mapped objects, non-final fields and public parameterless constructor.
+If these constraints are followed by the user-defined domain objects - MappableMongoOperations can be used which is much
+simpler than MongoOperations object:
+
+```java
+public interface MappableMongoOperations {
+// ...
+    String insert(MappableDataObject object);
+
+    void update(MappableDataObject object);
+
+    <T extends MappableDataObject> T getById(String id, Class<T> resultClass);
+// ...
+}
+```
+
+Sample usage:
+
+```java
+MappableMongoOperations mmo;
+//...
+
+Profile profile = new Profile("bob", 36);
+final String id = mmo.insert(profile);
+
+profile = new Profile(id, profile);
+assertEquals(profile, mmo.getById(id, Profile.class));
+
+profile = new Profile(id, "dave", 47);
+mmo.update(profile);
+assertEquals(profile, mmo.getById(id, Profile.class));
+```
