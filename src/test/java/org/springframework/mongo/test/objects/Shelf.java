@@ -8,24 +8,26 @@ import java.util.List;
 public final class Shelf extends TestDomainObject {
     private String id;
     private List<Book> books;
-    private String label;
+    private List<String> tags;
+    private Profile librarian;
 
     public Shelf() {
     }
 
-    public Shelf(String id, List<Book> books, String label) {
+    public Shelf(String id, List<Book> books, List<String> tags, Profile librarian) {
         this();
         this.id = id;
         this.books = books;
-        this.label = label;
+        this.tags = tags;
+        this.librarian = librarian;
     }
 
     public Shelf(String id, Shelf origin) {
-        this(id, origin.getBooks(), origin.getLabel());
+        this(id, origin.getBooks(), origin.getTags(), origin.getLibrarian());
     }
 
-    public Shelf(List<Book> books, String label) {
-        this(null, books, label);
+    public Shelf(List<Book> books, List<String> tags, Profile librarian) {
+        this(null, books, tags, librarian);
     }
 
     public String getId() {
@@ -36,7 +38,11 @@ public final class Shelf extends TestDomainObject {
         return books;
     }
 
-    public String getLabel() {
-        return label;
+    public List<String> getTags() {
+        return tags;
+    }
+
+    public Profile getLibrarian() {
+        return librarian;
     }
 }

@@ -134,8 +134,11 @@ final class FieldDescriptor {
 
         @Override
         public Object convert(Object source) {
-            final MappableClassLayout layout = config.getLayout(clazz);
+            if (source == null) {
+                return null;
+            }
 
+            final MappableClassLayout layout = config.getLayout(clazz);
             final DBObject dbSource = (DBObject) source;
             final CursorMapper<MappableDataObject> mapper = layout.getCursorMapper();
             return mapper.mapCursor(dbSource, 0);
@@ -154,6 +157,10 @@ final class FieldDescriptor {
 
         @Override
         public Object convert(Object source) {
+            if (source == null) {
+                return null;
+            }
+
             final MappableClassLayout layout = config.getLayout(clazz);
             final MappableDataObject dataObject = (MappableDataObject) source;
             return layout.toDBObject(dataObject);
@@ -213,14 +220,14 @@ final class FieldDescriptor {
     private static final Converter<Object, Object> OBJECT_ID_STRING = new Converter<Object, Object>() {
         @Override
         public Object convert(Object source) {
-            return ((ObjectId) source).toStringMongod();
+            return source != null ? ((ObjectId) source).toStringMongod() : null;
         }
     };
 
     private static final Converter<Object, Object> STRING_TO_OBJECT_ID = new Converter<Object, Object>() {
         @Override
         public Object convert(Object source) {
-            return new ObjectId(source.toString(), false);
+            return source != null ? new ObjectId(source.toString(), false) : null;
         }
     };
 

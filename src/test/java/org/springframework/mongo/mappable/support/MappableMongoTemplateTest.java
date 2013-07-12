@@ -49,10 +49,19 @@ public final class MappableMongoTemplateTest extends MongoTestSupport {
 
     @Test
     public void shouldSaveObjectWithList() {
-        Shelf shelf = new Shelf(Arrays.asList(new Book("Algebra", 496)), "math");
+        Shelf shelf = new Shelf(Arrays.asList(new Book("Algebra", 496)), Arrays.asList("math"), new Profile("ann", 19));
         final String id = mmo.insert(shelf);
 
         shelf = new Shelf(id, shelf);
+        assertEquals(shelf, mmo.queryById(Shelf.class, id));
+
+        shelf = new Shelf(id, Arrays.asList(new Book("Algebra", 496), new Book("Geo", 85)),
+                Arrays.asList("math", "geometry"), new Profile("jane", 23));
+        mmo.update(shelf);
+        assertEquals(shelf, mmo.queryById(Shelf.class, id));
+
+        shelf = new Shelf(id, Collections.<Book>emptyList(), Collections.<String>emptyList(), null);
+        mmo.update(shelf);
         assertEquals(shelf, mmo.queryById(Shelf.class, id));
     }
 
