@@ -23,6 +23,8 @@ public interface MongoOperations {
 
     WriteResult update(String collectionName, DBObject query, DBObject dbObject);
 
+    WriteResult remove(String collectionName, DBObject query);
+
     <T> List<T> query(String collectionName, CursorMapper<T> mapper, DBObject query);
 
     <T> List<T> query(String collectionName, CursorMapper<T> mapper, DBObject query, DBObject orderBy);
@@ -64,4 +66,14 @@ class ProfileMapper implements CursorMapper<Profile> {
         return new Profile(extractId(cursor), (String) cursor.get("name"), (Integer) cursor.get("age"));
     }
 }
+```
+
+```java
+Profile profile = new Profile("bob", 36);
+final String id = mo.insert("Profile", toDBObject(profile));
+assertEquals(ImmutableList.of(new Profile(id, profile)),
+        mo.query("Profile", new ProfileMapper(), new BasicDBObject()));
+
+mo.remove("Profile", withId(id));
+assertEquals(ImmutableList.<Profile>of(), mo.query("Profile", new ProfileMapper(), new BasicDBObject()));
 ```
