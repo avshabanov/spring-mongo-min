@@ -118,7 +118,13 @@ public final class MappableObjectsConfig {
         }
 
         @Override
+        public boolean hasMongoId() {
+            return idFieldDescriptor != null;
+        }
+
+        @Override
         public Object getMongoId(MappableDataObject object) {
+            Assert.state(idFieldDescriptor != null);
             try {
                 final Field field = idFieldDescriptor.getField();
                 field.setAccessible(true);

@@ -16,4 +16,6 @@ public interface MappableClassLayout {
     CursorMapper<MappableDataObject> getCursorMapper();
 
     Object getMongoId(MappableDataObject object);
+
+    boolean hasMongoId();
 }

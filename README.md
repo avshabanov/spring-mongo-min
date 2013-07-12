@@ -105,9 +105,9 @@ Profile profile = new Profile("bob", 36);
 final String id = mmo.insert(profile);
 
 profile = new Profile(id, profile);
-assertEquals(profile, mmo.getById(id, Profile.class));
+assertEquals(profile, mmo.getById(Profile.class, id));
 
 profile = new Profile(id, "dave", 47);
 mmo.update(profile);
-assertEquals(profile, mmo.getById(id, Profile.class));
+assertEquals(profile, mmo.getById(Profile.class, id));
 ```

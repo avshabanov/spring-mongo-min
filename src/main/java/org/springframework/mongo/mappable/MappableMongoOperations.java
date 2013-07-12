@@ -1,7 +1,9 @@
 package org.springframework.mongo.mappable;
 
-import org.springframework.mongo.core.MongoOperations;
+import com.mongodb.DBObject;
 import org.springframework.mongo.mappable.object.MappableDataObject;
+
+import java.util.List;
 
 /**
  * Encapsulates basic high-level operations on the {@link org.springframework.mongo.mappable.object.MappableDataObject} which is
@@ -12,11 +14,15 @@ import org.springframework.mongo.mappable.object.MappableDataObject;
  * @author Alexander Shabanov
  */
 public interface MappableMongoOperations {
-    MongoOperations getMongoOperations();
-
     String insert(MappableDataObject object);
 
     void update(MappableDataObject object);
 
-    <T extends MappableDataObject> T getById(String id, Class<T> resultClass);
+    void remove(Class<? extends MappableDataObject> clazz, String id);
+
+    <T extends MappableDataObject> T queryById(Class<T> resultClass, String id);
+
+    <T extends MappableDataObject> List<T> query(Class<T> resultClass, DBObject query);
+
+    <T extends MappableDataObject> List<T> query(Class<T> resultClass, DBObject query, DBObject orderBy);
 }
