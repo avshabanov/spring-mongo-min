@@ -15,6 +15,7 @@ import java.util.*;
 
 import static org.springframework.mongo.support.MongoUtil.ID;
 import static org.springframework.mongo.support.MongoUtil.expectOneUpdate;
+import static org.springframework.mongo.support.MongoUtil.withId;
 
 /**
  * TODO: comment
@@ -63,7 +64,7 @@ public class MappableMongoTemplate implements MappableMongoOperations {
                     throw new IllegalStateException(e);
                 }
             }
-        }, ID, new ObjectId(id, false));
+        }, withId(id));
     }
 
     //

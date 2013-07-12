@@ -27,7 +27,7 @@ public final class MongoTemplateTest extends MongoTestSupport {
         final String id = mo.insert("Profile", toDBObject(profile));
         profile = new Profile(id, profile);
         assertEquals(profile, mo.queryForObject("Profile", new ProfileMapper(), withId(id)));
-        profile = new Profile("dave", 47);
+        profile = new Profile(id, "dave", 47);
         mo.update("Profile", withId(id), toDBObject(profile));
         assertEquals(profile, mo.queryForObject("Profile", new ProfileMapper(), withId(id)));
     }
