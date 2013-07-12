@@ -1,7 +1,9 @@
 spring-mongo-min
 ================
 
-Minimalistic mongo support for Spring-driven projects
+Minimalistic mongo support for Spring-driven projects.
+
+*Note*, that at the moment this is experimental project and its functionality will grow as time goes by.
 
 ## Motivation
 

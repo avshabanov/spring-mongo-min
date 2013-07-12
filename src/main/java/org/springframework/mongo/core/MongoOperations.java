@@ -10,6 +10,8 @@ import java.util.List;
  * Implemented by {@link org.springframework.mongo.core.support.MongoTemplate}. Not often used directly, but a useful
  * option to enhance testability, as it can easily be mocked or stubbed.
  *
+ * TODO: stabilize
+ *
  * @author Alexander Shabanov
  * @see org.springframework.mongo.core.support.MongoTemplate
  */
@@ -17,6 +19,8 @@ public interface MongoOperations {
     String insert(String collectionName, DBObject dbObject);
 
     WriteResult update(String collectionName, DBObject query, DBObject dbObject);
+
+    WriteResult remove(String collectionName, DBObject query);
 
     <T> List<T> query(String collectionName, CursorMapper<T> mapper, DBObject query);
 

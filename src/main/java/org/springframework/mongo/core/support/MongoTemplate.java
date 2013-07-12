@@ -72,6 +72,16 @@ public class MongoTemplate implements MongoOperations {
     }
 
     @Override
+    public WriteResult remove(final String collectionName, final DBObject query) {
+        return executeWriteOperation(new MongoWriteOperation() {
+            @Override
+            public WriteResult execute() {
+                return getDb().getCollection(collectionName).remove(query);
+            }
+        });
+    }
+
+    @Override
     public <T> List<T> query(String collectionName, CursorMapper<T> mapper, DBObject query) {
         return query(collectionName, mapper, query, null);
     }

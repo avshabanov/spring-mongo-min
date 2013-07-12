@@ -5,6 +5,7 @@ import org.springframework.mongo.object.MappableDataObject;
 /**
  * Encapsulates basic high-level operations on the {@link MappableDataObject} which is
  * the simple ORM implementation for mongo.
+ * TODO: stabilize
  *
  * @author Alexander Shabanov
  */

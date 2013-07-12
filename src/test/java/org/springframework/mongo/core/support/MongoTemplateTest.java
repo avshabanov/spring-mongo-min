@@ -1,5 +1,6 @@
 package org.springframework.mongo.core.support;
 
+import com.google.common.collect.ImmutableList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import org.junit.Test;
@@ -22,7 +23,7 @@ public final class MongoTemplateTest extends MongoTestSupport {
     private MongoOperations mo;
 
     @Test
-    public void shouldInsertUpdateAndFindObject() {
+    public void shouldInsertUpdateAndFind() {
         Profile profile = new Profile("bob", 36);
         final String id = mo.insert("Profile", toDBObject(profile));
         profile = new Profile(id, profile);
@@ -30,6 +31,17 @@ public final class MongoTemplateTest extends MongoTestSupport {
         profile = new Profile(id, "dave", 47);
         mo.update("Profile", withId(id), toDBObject(profile));
         assertEquals(profile, mo.queryForObject("Profile", new ProfileMapper(), withId(id)));
+    }
+
+    @Test
+    public void shouldInsertAndRemove() {
+        Profile profile = new Profile("bob", 36);
+        final String id = mo.insert("Profile", toDBObject(profile));
+        assertEquals(ImmutableList.of(new Profile(id, profile)),
+                mo.query("Profile", new ProfileMapper(), new BasicDBObject()));
+
+        mo.remove("Profile", withId(id));
+        assertEquals(ImmutableList.<Profile>of(), mo.query("Profile", new ProfileMapper(), new BasicDBObject()));
     }
 
     @Configuration
