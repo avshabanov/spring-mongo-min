@@ -17,8 +17,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Alexander Shabanov
  */
 final class MappableObjectsConfig {
-    private Map<Class<?>, DefaultMappableClassLayout> classLayoutMap =
-            new ConcurrentHashMap<Class<?>, DefaultMappableClassLayout>();
+    private Map<Class<?>, DefaultMappableClassLayout<?>> classLayoutMap =
+            new ConcurrentHashMap<Class<?>, DefaultMappableClassLayout<?>>();
 
     private Class<?> mappableBase;
 
@@ -32,38 +32,37 @@ final class MappableObjectsConfig {
         this.mappableBase = mappableBase;
     }
 
-    public MappableClassLayout getLayout(Class<?> mappableClass) {
+    public <T> MappableClassLayout<T> getLayout(Class<T> mappableClass) {
         Assert.state(getMappableBase().isAssignableFrom(mappableClass), "Mappable class expected");
         return innerGetLayout(mappableClass);
     }
 
-    private DefaultMappableClassLayout innerGetLayout(Class<?> mappableClass) {
-        DefaultMappableClassLayout layout = classLayoutMap.get(mappableClass);
+    private <T> DefaultMappableClassLayout<T> innerGetLayout(Class<T> mappableClass) {
+        @SuppressWarnings("unchecked")
+        DefaultMappableClassLayout<T> layout = (DefaultMappableClassLayout<T>) classLayoutMap.get(mappableClass);
         if (layout != null) {
             return layout;
         }
-        layout = new DefaultMappableClassLayout(mappableClass);
+        layout = new DefaultMappableClassLayout<T>(mappableClass);
         classLayoutMap.put(mappableClass, layout);
         return layout;
     }
 
-    private final class DefaultMappableClassLayout implements MappableClassLayout {
-        private final Class<?> dataObjectClass;
+    private final class DefaultMappableClassLayout<T> implements MappableClassLayout<T> {
+        private final Class<T> dataObjectClass;
         private String collectionName;
         private List<FieldDescriptor> fieldDescriptors;
         private FieldDescriptor idFieldDescriptor;
         private CursorMapper<?> cursorMapper;
 
-        public DefaultMappableClassLayout(final Class<?> dataObjectClass) {
+        public DefaultMappableClassLayout(final Class<T> dataObjectClass) {
             this.dataObjectClass = dataObjectClass;
             this.collectionName = dataObjectClass.getSimpleName();
 
-            DefaultMappableClassLayout parentLayout = null;
-            final Class superclass = dataObjectClass.getSuperclass();
+            DefaultMappableClassLayout<? super T> parentLayout = null;
+            final Class<? super T> superclass = dataObjectClass.getSuperclass();
             if (getMappableBase().isAssignableFrom(superclass)) {
-                @SuppressWarnings({"unchecked", "UnnecessaryLocalVariable"})
-                final Class<Object> castedSuperclass = superclass;
-                parentLayout = innerGetLayout(castedSuperclass);
+                parentLayout = innerGetLayout(superclass);
             }
 
             final List<FieldDescriptor> fieldDescriptors = new ArrayList<FieldDescriptor>();
@@ -94,7 +93,7 @@ final class MappableObjectsConfig {
         }
 
         @Override
-        public final DBObject toDBObject(Object dataObject) {
+        public final DBObject toDBObject(T dataObject) {
             Assert.state(dataObject.getClass().equals(dataObjectClass), "Class mismatch");
             final BasicDBObject dbObject = new BasicDBObject();
             try {
@@ -116,14 +115,15 @@ final class MappableObjectsConfig {
         }
 
         @Override
-        public CursorMapper<?> getCursorMapper() {
+        @SuppressWarnings("unchecked")
+        public CursorMapper<T> getCursorMapper() {
             CursorMapper<?> result = cursorMapper;
             if (result == null) {
                 // TODO: analyze from multithreading prospective - OK with double initialization, Not OK with UB
                 result = createCursorMapper();
                 cursorMapper = result;
             }
-            return result;
+            return (CursorMapper<T>) result;
         }
 
         @Override
@@ -132,7 +132,7 @@ final class MappableObjectsConfig {
         }
 
         @Override
-        public Object getMongoId(Object object) {
+        public Object getMongoId(T object) {
             if (idFieldDescriptor == null) {
                 throw new IllegalStateException("id field does not exist in this object");
             }

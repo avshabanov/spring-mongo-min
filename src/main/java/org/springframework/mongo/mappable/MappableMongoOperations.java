@@ -17,7 +17,7 @@ public interface MappableMongoOperations {
 
     void setMappableBase(Class<?> mappableBase);
 
-    MappableClassLayout getLayout(Class<?> mappableClass);
+    <T> MappableClassLayout<T> getLayout(Class<T> mappableClass);
 
     //
     // ORM-specific methods

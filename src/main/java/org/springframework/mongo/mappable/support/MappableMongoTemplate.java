@@ -54,6 +54,7 @@ public final class MappableMongoTemplate implements MappableMongoOperations {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public String insert(Object object) {
         Assert.notNull(object, "Object can not be null");
         final MappableClassLayout classLayout = getLayout(object);
@@ -61,6 +62,7 @@ public final class MappableMongoTemplate implements MappableMongoOperations {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public void update(Object object) {
         final MappableClassLayout classLayout = getLayout(object);
         if (!classLayout.hasMongoId()) {
@@ -98,7 +100,7 @@ public final class MappableMongoTemplate implements MappableMongoOperations {
     }
 
     @Override
-    public MappableClassLayout getLayout(Class<?> mappableClass) {
+    public <T> MappableClassLayout<T> getLayout(Class<T> mappableClass) {
         Assert.notNull(mappableClass, "Mappable class shall not be null");
         return mappableObjectsConfig.getLayout(mappableClass);
     }
