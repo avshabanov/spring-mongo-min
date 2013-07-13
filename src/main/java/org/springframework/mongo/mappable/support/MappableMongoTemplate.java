@@ -56,13 +56,13 @@ public final class MappableMongoTemplate implements MappableMongoOperations {
     @Override
     public String insert(Object object) {
         Assert.notNull(object, "Object can not be null");
-        final MappableClassLayout classLayout = layoutOf(object);
+        final MappableClassLayout classLayout = getLayout(object);
         return mo.insert(classLayout.getCollectionName(), classLayout.toDBObject(object));
     }
 
     @Override
     public void update(Object object) {
-        final MappableClassLayout classLayout = layoutOf(object);
+        final MappableClassLayout classLayout = getLayout(object);
         if (!classLayout.hasMongoId()) {
             throw new IncorrectUpdateSemanticsDataAccessException("It is not possible to update object without inner ID");
         }
@@ -72,13 +72,13 @@ public final class MappableMongoTemplate implements MappableMongoOperations {
 
     @Override
     public void remove(Class<?> clazz, String id) {
-        final MappableClassLayout classLayout = layoutOf(clazz);
+        final MappableClassLayout classLayout = getLayout(clazz);
         mo.remove(classLayout.getCollectionName(), withId(id));
     }
 
     @Override
     public <T> T queryById(final Class<T> resultClass, String id) {
-        final MappableClassLayout classLayout = layoutOf(resultClass);
+        final MappableClassLayout classLayout = getLayout(resultClass);
         @SuppressWarnings("unchecked")
         final CursorMapper<T> cursorMapper = (CursorMapper<T>) classLayout.getCursorMapper();
         return mo.queryForObject(classLayout.getCollectionName(), cursorMapper, withId(id));
@@ -91,23 +91,24 @@ public final class MappableMongoTemplate implements MappableMongoOperations {
 
     @Override
     public <T> List<T> query(Class<T> resultClass, DBObject query, DBObject orderBy) {
-        final MappableClassLayout classLayout = layoutOf(resultClass);
+        final MappableClassLayout classLayout = getLayout(resultClass);
         @SuppressWarnings("unchecked")
         final CursorMapper<T> cursorMapper = (CursorMapper<T>) classLayout.getCursorMapper();
         return mo.query(classLayout.getCollectionName(), cursorMapper, query, orderBy);
+    }
+
+    @Override
+    public MappableClassLayout getLayout(Class<?> mappableClass) {
+        Assert.notNull(mappableClass, "Mappable class shall not be null");
+        return mappableObjectsConfig.getLayout(mappableClass);
     }
 
     //
     // Private
     //
 
-    private MappableClassLayout layoutOf(Class<?> mappableClass) {
-        Assert.notNull(mappableClass, "Mappable class shall not be null");
-        return mappableObjectsConfig.getLayout(mappableClass);
-    }
-
-    private MappableClassLayout layoutOf(Object mappableObject) {
+    private MappableClassLayout getLayout(Object mappableObject) {
         Assert.notNull(mappableObject, "Mappable object shall not be null");
-        return layoutOf(mappableObject.getClass());
+        return getLayout(mappableObject.getClass());
     }
 }

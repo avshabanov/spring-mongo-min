@@ -1,6 +1,7 @@
 package org.springframework.mongo.mappable;
 
 import com.mongodb.DBObject;
+import org.springframework.mongo.mappable.object.MappableClassLayout;
 
 import java.util.List;
 
@@ -13,7 +14,14 @@ import java.util.List;
  * @author Alexander Shabanov
  */
 public interface MappableMongoOperations {
+
     void setMappableBase(Class<?> mappableBase);
+
+    MappableClassLayout getLayout(Class<?> mappableClass);
+
+    //
+    // ORM-specific methods
+    //
 
     String insert(Object object);
 
