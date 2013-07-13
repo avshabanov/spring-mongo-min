@@ -1,9 +1,6 @@
 package org.springframework.mongo.core.support;
 
-import com.mongodb.DB;
-import com.mongodb.DBCursor;
-import com.mongodb.DBObject;
-import com.mongodb.WriteResult;
+import com.mongodb.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.mongo.core.CursorMapper;
@@ -82,6 +79,11 @@ public final class MongoTemplate implements MongoOperations {
     }
 
     @Override
+    public <T> List<T> query(String collectionName, CursorMapper<T> mapper, String key, Object value) {
+        return query(collectionName, mapper, new BasicDBObject().append(key, value));
+    }
+
+    @Override
     public <T> List<T> query(String collectionName, CursorMapper<T> mapper, DBObject query) {
         return query(collectionName, mapper, query, null);
     }
@@ -99,6 +101,11 @@ public final class MongoTemplate implements MongoOperations {
             result.add(mapper.mapCursor(cursor.curr(), rowNum++));
         }
         return Collections.unmodifiableList(result);
+    }
+
+    @Override
+    public <T> T queryForObject(String collectionName, CursorMapper<T> mapper, String key, Object value) {
+        return queryForObject(collectionName, mapper, new BasicDBObject().append(key, value));
     }
 
     @Override
