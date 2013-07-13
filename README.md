@@ -87,11 +87,11 @@ simpler than MongoOperations object:
 ```java
 public interface MappableMongoOperations {
 // ...
-    String insert(MappableDataObject object);
+    String insert(Object object);
 
-    void update(MappableDataObject object);
+    void update(Object object);
 
-    <T extends MappableDataObject> T getById(String id, Class<T> resultClass);
+    <T> T getById(String id, Class<T> resultClass);
 // ...
 }
 ```

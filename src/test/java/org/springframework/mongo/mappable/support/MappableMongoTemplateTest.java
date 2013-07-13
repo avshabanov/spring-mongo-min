@@ -12,6 +12,7 @@ import org.springframework.mongo.test.MongoTestSupport;
 import org.springframework.mongo.test.objects.Book;
 import org.springframework.mongo.test.objects.Profile;
 import org.springframework.mongo.test.objects.Shelf;
+import org.springframework.mongo.test.objects.TestDomainObject;
 import org.springframework.test.context.ContextConfiguration;
 
 import java.util.Arrays;
@@ -69,7 +70,7 @@ public final class MappableMongoTemplateTest extends MongoTestSupport {
     public static class Config {
         @Bean
         public MappableMongoOperations mappableMongoOperations() {
-            return new MappableMongoTemplate();
+            return new MappableMongoTemplate(TestDomainObject.class);
         }
 
         @Bean

@@ -55,7 +55,7 @@ public final class MongoTemplate implements MongoOperations {
         executeWriteOperation(new MongoWriteOperation() {
             @Override
             public WriteResult execute() {
-                return getDb().getCollection(collectionName).insert(dbObject);  //To change body of implemented methods use File | Settings | File Templates.
+                return getDb().getCollection(collectionName).insert(dbObject);
             }
         });
         return extractId(dbObject);

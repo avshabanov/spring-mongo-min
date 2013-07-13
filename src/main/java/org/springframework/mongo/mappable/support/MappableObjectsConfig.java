@@ -4,10 +4,10 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import org.springframework.mongo.core.CursorMapper;
 import org.springframework.mongo.mappable.object.MappableClassLayout;
-import org.springframework.mongo.mappable.object.MappableDataObject;
 import org.springframework.util.Assert;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -17,42 +17,52 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Alexander Shabanov
  */
 final class MappableObjectsConfig {
-    private Map<Class<? extends MappableDataObject>, DefaultMappableClassLayout> classLayoutMap =
-            new ConcurrentHashMap<Class<? extends MappableDataObject>, DefaultMappableClassLayout>();
+    private Map<Class<?>, DefaultMappableClassLayout> classLayoutMap =
+            new ConcurrentHashMap<Class<?>, DefaultMappableClassLayout>();
 
-    public MappableClassLayout getLayout(Class<? extends MappableDataObject> dataObjectClass) {
-        // unlikely to trigger
-        Assert.state(MappableDataObject.class.isAssignableFrom(dataObjectClass), "Mappable class expected");
+    private Class<?> mappableBase;
 
-        return innerGetLayout(dataObjectClass);
+    public Class<?> getMappableBase() {
+        Assert.state(mappableBase != null,
+                "Mappable class base should be initialized prior to using mappable functionality");
+        return mappableBase;
     }
 
-    private DefaultMappableClassLayout innerGetLayout(Class<? extends MappableDataObject> dataObjectClass) {
-        DefaultMappableClassLayout layout = classLayoutMap.get(dataObjectClass);
+    public void setMappableBase(Class<?> mappableBase) {
+        this.mappableBase = mappableBase;
+    }
+
+    public MappableClassLayout getLayout(Class<?> mappableClass) {
+        Assert.state(getMappableBase().isAssignableFrom(mappableClass), "Mappable class expected");
+        return innerGetLayout(mappableClass);
+    }
+
+    private DefaultMappableClassLayout innerGetLayout(Class<?> mappableClass) {
+        DefaultMappableClassLayout layout = classLayoutMap.get(mappableClass);
         if (layout != null) {
             return layout;
         }
-        layout = new DefaultMappableClassLayout(dataObjectClass);
-        classLayoutMap.put(dataObjectClass, layout);
+        layout = new DefaultMappableClassLayout(mappableClass);
+        classLayoutMap.put(mappableClass, layout);
         return layout;
     }
 
     private final class DefaultMappableClassLayout implements MappableClassLayout {
-        private final Class<? extends MappableDataObject> dataObjectClass;
+        private final Class<?> dataObjectClass;
         private String collectionName;
         private List<FieldDescriptor> fieldDescriptors;
         private FieldDescriptor idFieldDescriptor;
-        private CursorMapper<MappableDataObject> cursorMapper;
+        private CursorMapper<?> cursorMapper;
 
-        public DefaultMappableClassLayout(final Class<? extends MappableDataObject> dataObjectClass) {
+        public DefaultMappableClassLayout(final Class<?> dataObjectClass) {
             this.dataObjectClass = dataObjectClass;
             this.collectionName = dataObjectClass.getSimpleName();
 
             DefaultMappableClassLayout parentLayout = null;
             final Class superclass = dataObjectClass.getSuperclass();
-            if (MappableDataObject.class.isAssignableFrom(superclass)) {
+            if (getMappableBase().isAssignableFrom(superclass)) {
                 @SuppressWarnings({"unchecked", "UnnecessaryLocalVariable"})
-                final Class<MappableDataObject> castedSuperclass = superclass;
+                final Class<Object> castedSuperclass = superclass;
                 parentLayout = innerGetLayout(castedSuperclass);
             }
 
@@ -62,6 +72,10 @@ final class MappableObjectsConfig {
             }
 
             for (final Field field : dataObjectClass.getDeclaredFields()) {
+                if (Modifier.isStatic(field.getModifiers())) {
+                    continue;
+                }
+
                 FieldDescriptor fieldDescriptor = new FieldDescriptor(field, MappableObjectsConfig.this);
                 fieldDescriptors.add(fieldDescriptor);
                 if (fieldDescriptor.isId()) {
@@ -80,7 +94,7 @@ final class MappableObjectsConfig {
         }
 
         @Override
-        public final DBObject toDBObject(MappableDataObject dataObject) {
+        public final DBObject toDBObject(Object dataObject) {
             Assert.state(dataObject.getClass().equals(dataObjectClass), "Class mismatch");
             final BasicDBObject dbObject = new BasicDBObject();
             try {
@@ -102,8 +116,8 @@ final class MappableObjectsConfig {
         }
 
         @Override
-        public CursorMapper<MappableDataObject> getCursorMapper() {
-            CursorMapper<MappableDataObject> result = cursorMapper;
+        public CursorMapper<?> getCursorMapper() {
+            CursorMapper<?> result = cursorMapper;
             if (result == null) {
                 // TODO: analyze from multithreading prospective - OK with double initialization, Not OK with UB
                 result = createCursorMapper();
@@ -118,8 +132,11 @@ final class MappableObjectsConfig {
         }
 
         @Override
-        public Object getMongoId(MappableDataObject object) {
-            Assert.state(idFieldDescriptor != null);
+        public Object getMongoId(Object object) {
+            if (idFieldDescriptor == null) {
+                throw new IllegalStateException("id field does not exist in this object");
+            }
+
             try {
                 final Field field = idFieldDescriptor.getField();
                 field.setAccessible(true);
@@ -130,12 +147,12 @@ final class MappableObjectsConfig {
             }
         }
 
-        private CursorMapper<MappableDataObject> createCursorMapper() {
-            return new CursorMapper<MappableDataObject>() {
+        private CursorMapper<?> createCursorMapper() {
+            return new CursorMapper<Object>() {
                 @Override
-                public MappableDataObject mapCursor(DBObject cursor, int rowNum) {
+                public Object mapCursor(DBObject cursor, int rowNum) {
                     try {
-                        final MappableDataObject instance = dataObjectClass.newInstance();
+                        final Object instance = dataObjectClass.newInstance();
                         for (final FieldDescriptor fieldDescriptor : fieldDescriptors) {
                             final Object mongoValue = cursor.get(fieldDescriptor.getMongoName());
                             final Object javaValue = fieldDescriptor.getMongoToJavaConverter().convert(mongoValue);

@@ -11,11 +11,11 @@ import org.springframework.mongo.core.CursorMapper;
 public interface MappableClassLayout {
     String getCollectionName();
 
-    DBObject toDBObject(MappableDataObject dataObject);
+    DBObject toDBObject(Object dataObject);
 
-    CursorMapper<MappableDataObject> getCursorMapper();
+    CursorMapper<?> getCursorMapper();
 
-    Object getMongoId(MappableDataObject object);
+    Object getMongoId(Object object);
 
     boolean hasMongoId();
 }

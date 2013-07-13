@@ -14,7 +14,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
  */
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = {TestHybridDbConfig.class})
-public class MongoTestSupport {
+public abstract class MongoTestSupport {
     @Autowired
     private DB db;
 

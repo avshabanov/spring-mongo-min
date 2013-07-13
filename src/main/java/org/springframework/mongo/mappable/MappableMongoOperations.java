@@ -1,28 +1,29 @@
 package org.springframework.mongo.mappable;
 
 import com.mongodb.DBObject;
-import org.springframework.mongo.mappable.object.MappableDataObject;
 
 import java.util.List;
 
 /**
- * Encapsulates basic high-level operations on the {@link org.springframework.mongo.mappable.object.MappableDataObject} which is
- * the simple ORM implementation for mongo.
+ * Encapsulates basic high-level operations on the mappable objects.
+ * Consider this as a simple ORM implementation for mongo.
  *
  * TODO: stabilize
  *
  * @author Alexander Shabanov
  */
 public interface MappableMongoOperations {
-    String insert(MappableDataObject object);
+    void setMappableBase(Class<?> mappableBase);
 
-    void update(MappableDataObject object);
+    String insert(Object object);
 
-    void remove(Class<? extends MappableDataObject> clazz, String id);
+    void update(Object object);
 
-    <T extends MappableDataObject> T queryById(Class<T> resultClass, String id);
+    void remove(Class<?> clazz, String id);
 
-    <T extends MappableDataObject> List<T> query(Class<T> resultClass, DBObject query);
+    <T> T queryById(Class<T> resultClass, String id);
 
-    <T extends MappableDataObject> List<T> query(Class<T> resultClass, DBObject query, DBObject orderBy);
+    <T> List<T> query(Class<T> resultClass, DBObject query);
+
+    <T> List<T> query(Class<T> resultClass, DBObject query, DBObject orderBy);
 }

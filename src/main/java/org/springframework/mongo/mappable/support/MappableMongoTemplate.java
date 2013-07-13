@@ -8,9 +8,9 @@ import org.springframework.mongo.core.CursorMapper;
 import org.springframework.mongo.core.MongoOperations;
 import org.springframework.mongo.mappable.MappableMongoOperations;
 import org.springframework.mongo.mappable.object.MappableClassLayout;
-import org.springframework.mongo.mappable.object.MappableDataObject;
 import org.springframework.util.Assert;
 
+import javax.annotation.PostConstruct;
 import java.util.List;
 
 import static org.springframework.mongo.support.MongoUtil.ID;
@@ -28,15 +28,40 @@ public final class MappableMongoTemplate implements MappableMongoOperations {
 
     private MappableObjectsConfig mappableObjectsConfig = new MappableObjectsConfig();
 
+    private boolean initialized = false;
+    private boolean constructed = false;
+
+    public MappableMongoTemplate() {
+    }
+
+    public MappableMongoTemplate(Class<?> mappableBase) {
+        this();
+        setMappableBase(mappableBase);
+    }
+
     @Override
-    public String insert(MappableDataObject object) {
+    public void setMappableBase(Class<?> mappableBase) {
+        Assert.state(!constructed, "Mappable base can not be initialized after construction of this instance");
+        Assert.notNull(mappableBase, "Mappable base can not be null");
+        mappableObjectsConfig.setMappableBase(mappableBase);
+        initialized = true;
+    }
+
+    @PostConstruct
+    public void init() {
+        Assert.state(initialized, "Mappable base class should be initialized prior to construction");
+        constructed = true;
+    }
+
+    @Override
+    public String insert(Object object) {
         Assert.notNull(object, "Object can not be null");
         final MappableClassLayout classLayout = layoutOf(object);
         return mo.insert(classLayout.getCollectionName(), classLayout.toDBObject(object));
     }
 
     @Override
-    public void update(MappableDataObject object) {
+    public void update(Object object) {
         final MappableClassLayout classLayout = layoutOf(object);
         if (!classLayout.hasMongoId()) {
             throw new IncorrectUpdateSemanticsDataAccessException("It is not possible to update object without inner ID");
@@ -46,13 +71,13 @@ public final class MappableMongoTemplate implements MappableMongoOperations {
     }
 
     @Override
-    public void remove(Class<? extends MappableDataObject> clazz, String id) {
+    public void remove(Class<?> clazz, String id) {
         final MappableClassLayout classLayout = layoutOf(clazz);
         mo.remove(classLayout.getCollectionName(), withId(id));
     }
 
     @Override
-    public <T extends MappableDataObject> T queryById(final Class<T> resultClass, String id) {
+    public <T> T queryById(final Class<T> resultClass, String id) {
         final MappableClassLayout classLayout = layoutOf(resultClass);
         @SuppressWarnings("unchecked")
         final CursorMapper<T> cursorMapper = (CursorMapper<T>) classLayout.getCursorMapper();
@@ -60,12 +85,12 @@ public final class MappableMongoTemplate implements MappableMongoOperations {
     }
 
     @Override
-    public <T extends MappableDataObject> List<T> query(Class<T> resultClass, DBObject query) {
+    public <T> List<T> query(Class<T> resultClass, DBObject query) {
         return query(resultClass, query, null);
     }
 
     @Override
-    public <T extends MappableDataObject> List<T> query(Class<T> resultClass, DBObject query, DBObject orderBy) {
+    public <T> List<T> query(Class<T> resultClass, DBObject query, DBObject orderBy) {
         final MappableClassLayout classLayout = layoutOf(resultClass);
         @SuppressWarnings("unchecked")
         final CursorMapper<T> cursorMapper = (CursorMapper<T>) classLayout.getCursorMapper();
@@ -76,13 +101,13 @@ public final class MappableMongoTemplate implements MappableMongoOperations {
     // Private
     //
 
-    private MappableClassLayout layoutOf(Class<? extends MappableDataObject> dataObjectClass) {
-        Assert.notNull(dataObjectClass, "Data object shall not be null");
-        return mappableObjectsConfig.getLayout(dataObjectClass);
+    private MappableClassLayout layoutOf(Class<?> mappableClass) {
+        Assert.notNull(mappableClass, "Mappable class shall not be null");
+        return mappableObjectsConfig.getLayout(mappableClass);
     }
 
-    private MappableClassLayout layoutOf(MappableDataObject dataObject) {
-        Assert.notNull(dataObject, "Data object shall not be null");
-        return layoutOf(dataObject.getClass());
+    private MappableClassLayout layoutOf(Object mappableObject) {
+        Assert.notNull(mappableObject, "Mappable object shall not be null");
+        return layoutOf(mappableObject.getClass());
     }
 }
