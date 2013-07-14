@@ -44,6 +44,14 @@ public final class MongoTemplateTest extends MongoTestSupport {
         assertEquals(ImmutableList.<Profile>of(), mo.query("Profile", new ProfileMapper(), new BasicDBObject()));
     }
 
+    @Test
+    public void shouldQueryField() {
+        Profile profile = new Profile("bob", 36);
+        final String id = mo.insert("Profile", toDBObject(profile));
+        assertEquals(profile.getName(), mo.queryForObject("Profile", "name", String.class, withId(id)));
+        assertEquals(profile.getAge(), mo.queryForObject("Profile", "age", Integer.class, withId(id)));
+    }
+
     @Configuration
     public static class Config {
         @Bean

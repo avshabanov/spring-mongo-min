@@ -5,12 +5,12 @@ package org.springframework.mongo.test.objects;
  */
 public final class Book extends TestDomainObject {
     private String name;
-    private int pages;
+    private long pages;
 
     public Book() {
     }
 
-    public Book(String name, int pages) {
+    public Book(String name, long pages) {
         this();
         this.name = name;
         this.pages = pages;
@@ -20,7 +20,7 @@ public final class Book extends TestDomainObject {
         return name;
     }
 
-    public int getPages() {
+    public long getPages() {
         return pages;
     }
 }

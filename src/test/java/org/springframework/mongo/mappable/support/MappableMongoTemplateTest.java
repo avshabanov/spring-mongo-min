@@ -33,7 +33,7 @@ public final class MappableMongoTemplateTest extends MongoTestSupport {
         profile = new Profile(id, profile);
         assertEquals(profile, mmo.queryById(Profile.class, id));
 
-        profile = new Profile(id, "dave", 47);
+        profile = new Profile(id, "dave", null);
         mmo.update(profile);
         assertEquals(profile, mmo.queryById(Profile.class, id));
     }
@@ -49,13 +49,13 @@ public final class MappableMongoTemplateTest extends MongoTestSupport {
 
     @Test
     public void shouldSaveObjectWithList() {
-        Shelf shelf = new Shelf(Arrays.asList(new Book("Algebra", 496)), Arrays.asList("math"), new Profile("ann", 19));
+        Shelf shelf = new Shelf(Arrays.asList(new Book("Algebra", 496L)), Arrays.asList("math"), new Profile("ann", 19));
         final String id = mmo.insert(shelf);
 
         shelf = new Shelf(id, shelf);
         assertEquals(shelf, mmo.queryById(Shelf.class, id));
 
-        shelf = new Shelf(id, Arrays.asList(new Book("Algebra", 496), new Book("Geo", 85)),
+        shelf = new Shelf(id, Arrays.asList(new Book("Algebra", 496L), new Book("Geo", 85L)),
                 Arrays.asList("math", "geometry"), new Profile("jane", 23));
         mmo.update(shelf);
         assertEquals(shelf, mmo.queryById(Shelf.class, id));
