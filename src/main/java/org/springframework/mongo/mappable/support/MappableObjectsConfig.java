@@ -2,6 +2,7 @@ package org.springframework.mongo.mappable.support;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import org.springframework.core.convert.converter.Converter;
 import org.springframework.mongo.core.CursorMapper;
 import org.springframework.mongo.mappable.object.MappableClassLayout;
 import org.springframework.util.Assert;
@@ -17,8 +18,20 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Alexander Shabanov
  */
 final class MappableObjectsConfig {
-    private Map<Class<?>, DefaultMappableClassLayout<?>> classLayoutMap =
+    private final Map<Class<?>, DefaultMappableClassLayout<?>> classLayoutMap =
             new ConcurrentHashMap<Class<?>, DefaultMappableClassLayout<?>>();
+
+    static final class ConverterPair {
+        final Converter<Object, Object> javaToMongoConverter;
+        final Converter<Object, Object> mongoToJavaConverter;
+
+        ConverterPair(Converter<Object, Object> javaToMongoConverter, Converter<Object, Object> mongoToJavaConverter) {
+            this.javaToMongoConverter = javaToMongoConverter;
+            this.mongoToJavaConverter = mongoToJavaConverter;
+        }
+    }
+
+    private final Map<Class<?>, ConverterPair> classConverters = new ConcurrentHashMap<Class<?>, ConverterPair>();
 
     private Class<?> mappableBase;
 
@@ -35,6 +48,15 @@ final class MappableObjectsConfig {
     public <T> MappableClassLayout<T> getLayout(Class<T> mappableClass) {
         Assert.state(getMappableBase().isAssignableFrom(mappableClass), "Mappable class expected");
         return innerGetLayout(mappableClass);
+    }
+
+    public ConverterPair getConverterPair(Class<?> clazz) {
+        return classConverters.get(clazz);
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> void registerConverters(Class<T> clazz, Converter<T, Object> javaToMongo, Converter<Object, T> mongoToJava) {
+        classConverters.put(clazz, new ConverterPair((Converter) javaToMongo, (Converter) mongoToJava));
     }
 
     private <T> DefaultMappableClassLayout<T> innerGetLayout(Class<T> mappableClass) {

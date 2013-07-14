@@ -32,8 +32,13 @@ final class FieldDescriptor {
 
     public FieldDescriptor(Field field, MappableObjectsConfig config) {
         this.field = field;
-        Class fieldType = field.getType();
-        if (ID_FIELD.equals(field.getName())) {
+        final Class fieldType = field.getType();
+        final MappableObjectsConfig.ConverterPair converterPair = config.getConverterPair(fieldType);
+
+        if (converterPair != null) {
+            mongoToJavaConverter = converterPair.mongoToJavaConverter;
+            javaToMongoConverter = converterPair.javaToMongoConverter;
+        } else if (ID_FIELD.equals(field.getName())) {
             mongoName = MongoUtil.ID; // special case for _id field
             if (fieldType.equals(String.class)) {
                 mongoToJavaConverter = OBJECT_ID_STRING;
@@ -46,6 +51,9 @@ final class FieldDescriptor {
             initConvertersForCollectionType(config);
         } else if (config.getMappableBase().isAssignableFrom(fieldType)) {
             initConvertersForMappableType(config);
+        } else if (fieldType.isEnum()) {
+            mongoToJavaConverter = new MongoEnumConverter(fieldType);
+            javaToMongoConverter = JAVA_ENUM_CONVERTER;
         } else {
             // TODO: verify types once again
             mongoToJavaConverter = AS_IS;
@@ -150,6 +158,7 @@ final class FieldDescriptor {
         }
 
         @Override
+        @SuppressWarnings("unchecked")
         public Object convert(Object source) {
             if (source == null) {
                 return null;
@@ -195,6 +204,7 @@ final class FieldDescriptor {
         }
 
         @Override
+        @SuppressWarnings("unchecked")
         public Object convert(Object source) {
             final MappableClassLayout layout = config.getLayout(clazz);
 
@@ -204,6 +214,27 @@ final class FieldDescriptor {
                 list.add(layout.toDBObject(dataObject));
             }
             return list;
+        }
+    }
+
+    private static final Converter<Object, Object> JAVA_ENUM_CONVERTER = new Converter<Object, Object>() {
+        @Override
+        public Object convert(Object source) {
+            return source != null ? source.toString() : null;
+        }
+    };
+
+
+    private static final class MongoEnumConverter implements Converter<Object, Object> {
+        private final Class<?> enumClass;
+
+        public MongoEnumConverter(Class<?> enumClass) {
+            this.enumClass = enumClass;
+        }
+
+        @Override
+        public Object convert(Object source) {
+            return source != null ? Enum.valueOf((Class) enumClass, source.toString()) : null;
         }
     }
 

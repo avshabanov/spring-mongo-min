@@ -9,12 +9,11 @@ import org.springframework.mongo.core.MongoOperations;
 import org.springframework.mongo.core.support.MongoTemplate;
 import org.springframework.mongo.mappable.MappableMongoOperations;
 import org.springframework.mongo.test.MongoTestSupport;
-import org.springframework.mongo.test.objects.Book;
-import org.springframework.mongo.test.objects.Profile;
-import org.springframework.mongo.test.objects.Shelf;
-import org.springframework.mongo.test.objects.TestDomainObject;
+import org.springframework.mongo.test.objects.*;
 import org.springframework.test.context.ContextConfiguration;
 
+import java.net.URI;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.Collections;
 
@@ -64,6 +63,19 @@ public final class MappableMongoTemplateTest extends MongoTestSupport {
         shelf = new Shelf(id, Collections.<Book>emptyList(), Collections.<String>emptyList(), null);
         mmo.update(shelf);
         assertEquals(shelf, mmo.queryById(Shelf.class, id));
+    }
+
+    @Test
+    public void shouldSaveObjectWithNontrivialFields() throws Exception {
+        Msg msg = new Msg(MsgState.CREATED, new URL("http://site.com"), URI.create("urn:sample:srv"));
+        final String id = mmo.insert(msg);
+
+        msg = new Msg(id, msg);
+        assertEquals(msg, mmo.queryById(Msg.class, id));
+
+        msg = new Msg(id, MsgState.SENT, null, null);
+        mmo.update(msg);
+        assertEquals(msg, mmo.queryById(Msg.class, id));
     }
 
     @Configuration

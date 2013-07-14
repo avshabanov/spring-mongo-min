@@ -3,6 +3,7 @@ package org.springframework.mongo.mappable.support;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.convert.converter.Converter;
 import org.springframework.dao.IncorrectUpdateSemanticsDataAccessException;
 import org.springframework.mongo.core.CursorMapper;
 import org.springframework.mongo.core.MongoOperations;
@@ -11,11 +12,12 @@ import org.springframework.mongo.mappable.object.MappableClassLayout;
 import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
 import java.util.List;
 
-import static org.springframework.mongo.support.MongoUtil.ID;
-import static org.springframework.mongo.support.MongoUtil.expectOneUpdate;
-import static org.springframework.mongo.support.MongoUtil.withId;
+import static org.springframework.mongo.support.MongoUtil.*;
 
 /**
  * Default implementation of the {@link MappableMongoOperations}.
@@ -32,6 +34,37 @@ public final class MappableMongoTemplate implements MappableMongoOperations {
     private boolean constructed = false;
 
     public MappableMongoTemplate() {
+        registerConverters(URI.class,
+                new Converter<URI, Object>() {
+                    @Override
+                    public Object convert(URI source) {
+                        return source != null ? source.toString() : null;
+                    }
+                },
+                new Converter<Object, URI>() {
+                    @Override
+                    public URI convert(Object source) {
+                        return source != null ? URI.create(source.toString()) : null;
+                    }
+                });
+
+        registerConverters(URL.class,
+                new Converter<URL, Object>() {
+                    @Override
+                    public Object convert(URL source) {
+                        return source != null ? source.toString() : null;
+                    }
+                },
+                new Converter<Object, URL>() {
+                    @Override
+                    public URL convert(Object source) {
+                        try {
+                            return source != null ? new URL(source.toString()) : null;
+                        } catch (MalformedURLException e) {
+                            throw new IllegalArgumentException(e);
+                        }
+                    }
+                });
     }
 
     public MappableMongoTemplate(Class<?> mappableBase) {
@@ -45,6 +78,12 @@ public final class MappableMongoTemplate implements MappableMongoOperations {
         Assert.notNull(mappableBase, "Mappable base can not be null");
         mappableObjectsConfig.setMappableBase(mappableBase);
         initialized = true;
+    }
+
+    @Override
+    public <T> void registerConverters(Class<T> clazz, Converter<T, Object> javaToMongo, Converter<Object, T> mongoToJava) {
+        Assert.state(!constructed, "Mappable base can not be initialized after construction of this instance");
+        mappableObjectsConfig.registerConverters(clazz, javaToMongo, mongoToJava);
     }
 
     @PostConstruct

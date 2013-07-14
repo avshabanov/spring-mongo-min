@@ -1,6 +1,7 @@
 package org.springframework.mongo.mappable;
 
 import com.mongodb.DBObject;
+import org.springframework.core.convert.converter.Converter;
 import org.springframework.mongo.mappable.object.MappableClassLayout;
 
 import java.util.List;
@@ -18,6 +19,8 @@ public interface MappableMongoOperations {
     void setMappableBase(Class<?> mappableBase);
 
     <T> MappableClassLayout<T> getLayout(Class<T> mappableClass);
+
+    <T> void registerConverters(Class<T> clazz, Converter<T, Object> javaToMongo, Converter<Object, T> mongoToJava);
 
     //
     // ORM-specific methods
