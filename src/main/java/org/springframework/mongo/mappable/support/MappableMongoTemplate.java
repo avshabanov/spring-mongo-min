@@ -72,6 +72,12 @@ public final class MappableMongoTemplate implements MappableMongoOperations {
         setMappableBase(mappableBase);
     }
 
+    @PostConstruct
+    public void init() {
+        Assert.state(initialized, "Mappable base class should be initialized prior to construction");
+        constructed = true;
+    }
+
     @Override
     public void setMappableBase(Class<?> mappableBase) {
         Assert.state(!constructed, "Mappable base can not be initialized after construction of this instance");
@@ -84,12 +90,6 @@ public final class MappableMongoTemplate implements MappableMongoOperations {
     public <T> void registerConverters(Class<T> clazz, Converter<T, Object> javaToMongo, Converter<Object, T> mongoToJava) {
         Assert.state(!constructed, "Mappable base can not be initialized after construction of this instance");
         mappableObjectsConfig.registerConverters(clazz, javaToMongo, mongoToJava);
-    }
-
-    @PostConstruct
-    public void init() {
-        Assert.state(initialized, "Mappable base class should be initialized prior to construction");
-        constructed = true;
     }
 
     @Override
