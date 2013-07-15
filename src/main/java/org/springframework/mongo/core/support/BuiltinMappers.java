@@ -12,7 +12,7 @@ public final class BuiltinMappers {
 
     @SuppressWarnings("unchecked")
     public static <T> CursorMapper<T> getMapperFor(final String fieldName, Class<T> valueClass) {
-        if (Number.class.equals(valueClass)) {
+        if (Number.class.isAssignableFrom(valueClass)) {
             return (CursorMapper<T>) new CursorMapper<Number>() {
                 @Override
                 public Number mapCursor(DBObject cursor, int rowNum) {

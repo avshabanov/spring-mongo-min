@@ -22,11 +22,15 @@ public interface MongoOperations {
 
     WriteResult remove(String collectionName, DBObject query);
 
+    <T> List<T> query(String collectionName, CursorMapper<T> mapper, String key, Object value);
+
     <T> List<T> query(String collectionName, CursorMapper<T> mapper, DBObject query);
 
     <T> List<T> query(String collectionName, CursorMapper<T> mapper, DBObject query, DBObject orderBy);
 
     <T> List<T> query(String collectionName, String resultFieldName, Class<T> resultClass, DBObject query, DBObject orderBy);
+
+    <T> T queryForObject(String collectionName, CursorMapper<T> mapper, String key, Object value);
 
     <T> T queryForObject(String collectionName, CursorMapper<T> mapper, DBObject queryObject);
 

@@ -6,20 +6,20 @@ package org.springframework.mongo.test.objects;
 public final class Profile extends TestDomainObject {
     private String id;
     private String name;
-    private int age;
+    private Integer age;
 
     // for mappable mongo template
     public Profile() {
     }
 
-    public Profile(String id, String name, int age) {
+    public Profile(String id, String name, Integer age) {
         this();
         this.id = id;
         this.name = name;
         this.age = age;
     }
 
-    public Profile(String name, int age) {
+    public Profile(String name, Integer age) {
         this(null, name, age);
     }
 
@@ -35,7 +35,7 @@ public final class Profile extends TestDomainObject {
         return name;
     }
 
-    public int getAge() {
+    public Integer getAge() {
         return age;
     }
 }

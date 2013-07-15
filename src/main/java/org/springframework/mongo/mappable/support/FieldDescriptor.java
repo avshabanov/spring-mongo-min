@@ -6,7 +6,6 @@ import org.bson.types.ObjectId;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.mongo.core.CursorMapper;
 import org.springframework.mongo.mappable.object.MappableClassLayout;
-import org.springframework.mongo.mappable.object.MappableDataObject;
 import org.springframework.mongo.support.MongoUtil;
 import org.springframework.util.Assert;
 
@@ -33,8 +32,13 @@ final class FieldDescriptor {
 
     public FieldDescriptor(Field field, MappableObjectsConfig config) {
         this.field = field;
-        Class fieldType = field.getType();
-        if (ID_FIELD.equals(field.getName())) {
+        final Class fieldType = field.getType();
+        final MappableObjectsConfig.ConverterPair converterPair = config.getConverterPair(fieldType);
+
+        if (converterPair != null) {
+            mongoToJavaConverter = converterPair.mongoToJavaConverter;
+            javaToMongoConverter = converterPair.javaToMongoConverter;
+        } else if (ID_FIELD.equals(field.getName())) {
             mongoName = MongoUtil.ID; // special case for _id field
             if (fieldType.equals(String.class)) {
                 mongoToJavaConverter = OBJECT_ID_STRING;
@@ -45,8 +49,11 @@ final class FieldDescriptor {
             }
         } else if (Collection.class.isAssignableFrom(fieldType)) {
             initConvertersForCollectionType(config);
-        } else if (MappableDataObject.class.isAssignableFrom(fieldType)) {
+        } else if (config.getMappableBase().isAssignableFrom(fieldType)) {
             initConvertersForMappableType(config);
+        } else if (fieldType.isEnum()) {
+            mongoToJavaConverter = new MongoEnumConverter(fieldType);
+            javaToMongoConverter = JAVA_ENUM_CONVERTER;
         } else {
             // TODO: verify types once again
             mongoToJavaConverter = AS_IS;
@@ -82,8 +89,7 @@ final class FieldDescriptor {
     }
 
     private void initConvertersForMappableType(MappableObjectsConfig config) {
-        @SuppressWarnings("unchecked")
-        final Class<? extends MappableDataObject> mappableClass = (Class<? extends MappableDataObject>) field.getType();
+        final Class<?> mappableClass = field.getType();
         mongoToJavaConverter = new MongoMappableObjectConverter(mappableClass, config);
         javaToMongoConverter = new JavaMappableObjectConverter(mappableClass, config);
     }
@@ -105,7 +111,7 @@ final class FieldDescriptor {
         }
 
         final Class argClass = (Class) argType;
-        if (!MappableDataObject.class.isAssignableFrom(argClass)) {
+        if (!config.getMappableBase().isAssignableFrom(argClass)) {
             if (String.class.equals(argClass) || Number.class.isAssignableFrom(argClass)) {
                 // ok, collection of primitives
                 // TODO: test
@@ -115,19 +121,16 @@ final class FieldDescriptor {
                 throw new IllegalStateException("Unrecognized collection type for field=" + field);
             }
         } else {
-            @SuppressWarnings("unchecked")
-            final Class<? extends MappableDataObject> mappableClass = (Class<? extends MappableDataObject>) argClass;
-            mongoToJavaConverter = new MongoMappableCollectionConverter(mappableClass, config);
-            javaToMongoConverter = new JavaMappableCollectionConverter(mappableClass, config);
+            mongoToJavaConverter = new MongoMappableCollectionConverter(argClass, config);
+            javaToMongoConverter = new JavaMappableCollectionConverter(argClass, config);
         }
     }
 
     private static final class MongoMappableObjectConverter implements Converter<Object, Object> {
-        private final Class<? extends MappableDataObject> clazz;
+        private final Class<?> clazz;
         private final MappableObjectsConfig config;
 
-        public MongoMappableObjectConverter(Class<? extends MappableDataObject> clazz,
-                                            MappableObjectsConfig config) {
+        public MongoMappableObjectConverter(Class<?> clazz, MappableObjectsConfig config) {
             this.clazz = clazz;
             this.config = config;
         }
@@ -140,39 +143,37 @@ final class FieldDescriptor {
 
             final MappableClassLayout layout = config.getLayout(clazz);
             final DBObject dbSource = (DBObject) source;
-            final CursorMapper<MappableDataObject> mapper = layout.getCursorMapper();
+            final CursorMapper<?> mapper = layout.getCursorMapper();
             return mapper.mapCursor(dbSource, 0);
         }
     }
 
     private static final class JavaMappableObjectConverter implements Converter<Object, Object> {
-        private final Class<? extends MappableDataObject> clazz;
+        private final Class<?> clazz;
         private final MappableObjectsConfig config;
 
-        public JavaMappableObjectConverter(Class<? extends MappableDataObject> clazz,
-                                           MappableObjectsConfig config) {
+        public JavaMappableObjectConverter(Class<?> clazz, MappableObjectsConfig config) {
             this.clazz = clazz;
             this.config = config;
         }
 
         @Override
+        @SuppressWarnings("unchecked")
         public Object convert(Object source) {
             if (source == null) {
                 return null;
             }
 
             final MappableClassLayout layout = config.getLayout(clazz);
-            final MappableDataObject dataObject = (MappableDataObject) source;
-            return layout.toDBObject(dataObject);
+            return layout.toDBObject(source);
         }
     }
 
     private static final class MongoMappableCollectionConverter implements Converter<Object, Object> {
-        private final Class<? extends MappableDataObject> clazz;
+        private final Class<?> clazz;
         private final MappableObjectsConfig config;
 
-        public MongoMappableCollectionConverter(Class<? extends MappableDataObject> clazz,
-                                                MappableObjectsConfig config) {
+        public MongoMappableCollectionConverter(Class<?> clazz, MappableObjectsConfig config) {
             this.clazz = clazz;
             this.config = config;
         }
@@ -184,7 +185,7 @@ final class FieldDescriptor {
             @SuppressWarnings("unchecked")
             final Collection<DBObject> dbObjects = (Collection<DBObject>) source;
             final List<Object> result = new ArrayList<Object>(dbObjects.size());
-            final CursorMapper<MappableDataObject> mapper = layout.getCursorMapper();
+            final CursorMapper<?> mapper = layout.getCursorMapper();
             int row = 0;
             for (final DBObject dbObject : dbObjects) {
                 result.add(mapper.mapCursor(dbObject, row++));
@@ -194,26 +195,46 @@ final class FieldDescriptor {
     }
 
     private final class JavaMappableCollectionConverter implements Converter<Object, Object> {
-        private final Class<? extends MappableDataObject> clazz;
+        private final Class<?> clazz;
         private final MappableObjectsConfig config;
 
-        public JavaMappableCollectionConverter(Class<? extends MappableDataObject> clazz,
-                                               MappableObjectsConfig config) {
+        public JavaMappableCollectionConverter(Class<?> clazz, MappableObjectsConfig config) {
             this.clazz = clazz;
             this.config = config;
         }
 
         @Override
+        @SuppressWarnings("unchecked")
         public Object convert(Object source) {
             final MappableClassLayout layout = config.getLayout(clazz);
 
-            @SuppressWarnings("unchecked")
-            final Collection<? extends MappableDataObject> javaObjects = (Collection<? extends MappableDataObject>) source;
+            final Collection javaObjects = (Collection) source;
             final BasicDBList list = new BasicDBList();
-            for (final MappableDataObject dataObject : javaObjects) {
+            for (final Object dataObject : javaObjects) {
                 list.add(layout.toDBObject(dataObject));
             }
             return list;
+        }
+    }
+
+    private static final Converter<Object, Object> JAVA_ENUM_CONVERTER = new Converter<Object, Object>() {
+        @Override
+        public Object convert(Object source) {
+            return source != null ? source.toString() : null;
+        }
+    };
+
+
+    private static final class MongoEnumConverter implements Converter<Object, Object> {
+        private final Class<?> enumClass;
+
+        public MongoEnumConverter(Class<?> enumClass) {
+            this.enumClass = enumClass;
+        }
+
+        @Override
+        public Object convert(Object source) {
+            return source != null ? Enum.valueOf((Class) enumClass, source.toString()) : null;
         }
     }
 

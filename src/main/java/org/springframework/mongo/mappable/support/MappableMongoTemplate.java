@@ -3,19 +3,21 @@ package org.springframework.mongo.mappable.support;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.convert.converter.Converter;
 import org.springframework.dao.IncorrectUpdateSemanticsDataAccessException;
 import org.springframework.mongo.core.CursorMapper;
 import org.springframework.mongo.core.MongoOperations;
 import org.springframework.mongo.mappable.MappableMongoOperations;
 import org.springframework.mongo.mappable.object.MappableClassLayout;
-import org.springframework.mongo.mappable.object.MappableDataObject;
 import org.springframework.util.Assert;
 
+import javax.annotation.PostConstruct;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
 import java.util.List;
 
-import static org.springframework.mongo.support.MongoUtil.ID;
-import static org.springframework.mongo.support.MongoUtil.expectOneUpdate;
-import static org.springframework.mongo.support.MongoUtil.withId;
+import static org.springframework.mongo.support.MongoUtil.*;
 
 /**
  * Default implementation of the {@link MappableMongoOperations}.
@@ -28,16 +30,80 @@ public final class MappableMongoTemplate implements MappableMongoOperations {
 
     private MappableObjectsConfig mappableObjectsConfig = new MappableObjectsConfig();
 
+    private boolean initialized = false;
+    private boolean constructed = false;
+
+    public MappableMongoTemplate() {
+        registerConverters(URI.class,
+                new Converter<URI, Object>() {
+                    @Override
+                    public Object convert(URI source) {
+                        return source != null ? source.toString() : null;
+                    }
+                },
+                new Converter<Object, URI>() {
+                    @Override
+                    public URI convert(Object source) {
+                        return source != null ? URI.create(source.toString()) : null;
+                    }
+                });
+
+        registerConverters(URL.class,
+                new Converter<URL, Object>() {
+                    @Override
+                    public Object convert(URL source) {
+                        return source != null ? source.toString() : null;
+                    }
+                },
+                new Converter<Object, URL>() {
+                    @Override
+                    public URL convert(Object source) {
+                        try {
+                            return source != null ? new URL(source.toString()) : null;
+                        } catch (MalformedURLException e) {
+                            throw new IllegalArgumentException(e);
+                        }
+                    }
+                });
+    }
+
+    public MappableMongoTemplate(Class<?> mappableBase) {
+        this();
+        setMappableBase(mappableBase);
+    }
+
+    @PostConstruct
+    public void init() {
+        Assert.state(initialized, "Mappable base class should be initialized prior to construction");
+        constructed = true;
+    }
+
     @Override
-    public String insert(MappableDataObject object) {
+    public void setMappableBase(Class<?> mappableBase) {
+        Assert.state(!constructed, "Mappable base can not be initialized after construction of this instance");
+        Assert.notNull(mappableBase, "Mappable base can not be null");
+        mappableObjectsConfig.setMappableBase(mappableBase);
+        initialized = true;
+    }
+
+    @Override
+    public <T> void registerConverters(Class<T> clazz, Converter<T, Object> javaToMongo, Converter<Object, T> mongoToJava) {
+        Assert.state(!constructed, "Mappable base can not be initialized after construction of this instance");
+        mappableObjectsConfig.registerConverters(clazz, javaToMongo, mongoToJava);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public String insert(Object object) {
         Assert.notNull(object, "Object can not be null");
-        final MappableClassLayout classLayout = layoutOf(object);
+        final MappableClassLayout classLayout = getLayout(object);
         return mo.insert(classLayout.getCollectionName(), classLayout.toDBObject(object));
     }
 
     @Override
-    public void update(MappableDataObject object) {
-        final MappableClassLayout classLayout = layoutOf(object);
+    @SuppressWarnings("unchecked")
+    public void update(Object object) {
+        final MappableClassLayout classLayout = getLayout(object);
         if (!classLayout.hasMongoId()) {
             throw new IncorrectUpdateSemanticsDataAccessException("It is not possible to update object without inner ID");
         }
@@ -46,43 +112,44 @@ public final class MappableMongoTemplate implements MappableMongoOperations {
     }
 
     @Override
-    public void remove(Class<? extends MappableDataObject> clazz, String id) {
-        final MappableClassLayout classLayout = layoutOf(clazz);
+    public void remove(Class<?> clazz, String id) {
+        final MappableClassLayout classLayout = getLayout(clazz);
         mo.remove(classLayout.getCollectionName(), withId(id));
     }
 
     @Override
-    public <T extends MappableDataObject> T queryById(final Class<T> resultClass, String id) {
-        final MappableClassLayout classLayout = layoutOf(resultClass);
+    public <T> T queryById(final Class<T> resultClass, String id) {
+        final MappableClassLayout classLayout = getLayout(resultClass);
         @SuppressWarnings("unchecked")
         final CursorMapper<T> cursorMapper = (CursorMapper<T>) classLayout.getCursorMapper();
         return mo.queryForObject(classLayout.getCollectionName(), cursorMapper, withId(id));
     }
 
     @Override
-    public <T extends MappableDataObject> List<T> query(Class<T> resultClass, DBObject query) {
+    public <T> List<T> query(Class<T> resultClass, DBObject query) {
         return query(resultClass, query, null);
     }
 
     @Override
-    public <T extends MappableDataObject> List<T> query(Class<T> resultClass, DBObject query, DBObject orderBy) {
-        final MappableClassLayout classLayout = layoutOf(resultClass);
+    public <T> List<T> query(Class<T> resultClass, DBObject query, DBObject orderBy) {
+        final MappableClassLayout classLayout = getLayout(resultClass);
         @SuppressWarnings("unchecked")
         final CursorMapper<T> cursorMapper = (CursorMapper<T>) classLayout.getCursorMapper();
         return mo.query(classLayout.getCollectionName(), cursorMapper, query, orderBy);
+    }
+
+    @Override
+    public <T> MappableClassLayout<T> getLayout(Class<T> mappableClass) {
+        Assert.notNull(mappableClass, "Mappable class shall not be null");
+        return mappableObjectsConfig.getLayout(mappableClass);
     }
 
     //
     // Private
     //
 
-    private MappableClassLayout layoutOf(Class<? extends MappableDataObject> dataObjectClass) {
-        Assert.notNull(dataObjectClass, "Data object shall not be null");
-        return mappableObjectsConfig.getLayout(dataObjectClass);
-    }
-
-    private MappableClassLayout layoutOf(MappableDataObject dataObject) {
-        Assert.notNull(dataObject, "Data object shall not be null");
-        return layoutOf(dataObject.getClass());
+    private MappableClassLayout getLayout(Object mappableObject) {
+        Assert.notNull(mappableObject, "Mappable object shall not be null");
+        return getLayout(mappableObject.getClass());
     }
 }
