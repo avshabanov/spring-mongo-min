@@ -66,6 +66,16 @@ public final class MappableMongoTemplateTest extends MongoTestSupport {
     }
 
     @Test
+    public void shouldQueryForObject() {
+        Profile profile = new Profile("bob", 36);
+        final String id = mmo.insert(profile);
+        profile = new Profile(id, profile);
+
+        assertEquals(profile, mmo.queryForObject(Profile.class, "name", profile.getName()));
+        assertEquals(profile, mmo.queryForObject(Profile.class, "age", profile.getAge()));
+    }
+
+    @Test
     public void shouldSaveObjectWithNontrivialFields() throws Exception {
         Msg msg = new Msg(MsgState.CREATED, new URL("http://site.com"), URI.create("urn:sample:srv"));
         final String id = mmo.insert(msg);

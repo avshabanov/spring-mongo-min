@@ -64,7 +64,8 @@ public final class MappableMongoTemplate implements MappableMongoOperations {
                             throw new IllegalArgumentException(e);
                         }
                     }
-                });
+                }
+        );
     }
 
     public MappableMongoTemplate(Class<?> mappableBase) {
@@ -136,6 +137,24 @@ public final class MappableMongoTemplate implements MappableMongoOperations {
         @SuppressWarnings("unchecked")
         final CursorMapper<T> cursorMapper = (CursorMapper<T>) classLayout.getCursorMapper();
         return mo.query(classLayout.getCollectionName(), cursorMapper, query, orderBy);
+    }
+
+    @Override
+    public <T> List<T> query(Class<T> resultClass, String key, Object value) {
+        return query(resultClass, new BasicDBObject(key, value));
+    }
+
+    @Override
+    public <T> T queryForObject(Class<T> resultClass, String key, Object value) {
+        return queryForObject(resultClass, new BasicDBObject(key, value));
+    }
+
+    @Override
+    public <T> T queryForObject(Class<T> resultClass, DBObject queryObject) {
+        final MappableClassLayout classLayout = getLayout(resultClass);
+        @SuppressWarnings("unchecked")
+        final CursorMapper<T> cursorMapper = (CursorMapper<T>) classLayout.getCursorMapper();
+        return mo.queryForObject(classLayout.getCollectionName(), cursorMapper, queryObject);
     }
 
     @Override

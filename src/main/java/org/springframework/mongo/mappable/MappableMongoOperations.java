@@ -37,4 +37,10 @@ public interface MappableMongoOperations {
     <T> List<T> query(Class<T> resultClass, DBObject query);
 
     <T> List<T> query(Class<T> resultClass, DBObject query, DBObject orderBy);
+
+    <T> List<T> query(Class<T> resultClass, String key, Object value);
+
+    <T> T queryForObject(Class<T> resultClass, String key, Object value);
+
+    <T> T queryForObject(Class<T> resultClass, DBObject queryObject);
 }
