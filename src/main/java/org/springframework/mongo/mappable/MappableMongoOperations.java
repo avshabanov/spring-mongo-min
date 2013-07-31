@@ -30,6 +30,8 @@ public interface MappableMongoOperations {
 
     void update(Object object);
 
+    void remove(Class<?> clazz, DBObject query);
+
     void remove(Class<?> clazz, String id);
 
     <T> T queryById(Class<T> resultClass, String id);

@@ -96,7 +96,7 @@ public final class MappableMongoTemplate implements MappableMongoOperations {
     @Override
     @SuppressWarnings("unchecked")
     public String insert(Object object) {
-        Assert.notNull(object, "Object can not be null");
+        Assert.notNull(object, "object can not be null");
         final MappableClassLayout classLayout = getLayout(object);
         return mo.insert(classLayout.getCollectionName(), classLayout.toDBObject(object));
     }
@@ -104,6 +104,7 @@ public final class MappableMongoTemplate implements MappableMongoOperations {
     @Override
     @SuppressWarnings("unchecked")
     public void update(Object object) {
+        Assert.notNull(object, "object can not be null");
         final MappableClassLayout classLayout = getLayout(object);
         if (!classLayout.hasMongoId()) {
             throw new IncorrectUpdateSemanticsDataAccessException("It is not possible to update object without inner ID");
@@ -113,9 +114,15 @@ public final class MappableMongoTemplate implements MappableMongoOperations {
     }
 
     @Override
-    public void remove(Class<?> clazz, String id) {
+    public void remove(Class<?> clazz, DBObject query) {
         final MappableClassLayout classLayout = getLayout(clazz);
-        mo.remove(classLayout.getCollectionName(), withId(id));
+        mo.remove(classLayout.getCollectionName(), query);
+    }
+
+    @Override
+    public void remove(Class<?> clazz, String id) {
+        Assert.notNull(id, "id can not be null");
+        remove(clazz, withId(id));
     }
 
     @Override
@@ -150,11 +157,11 @@ public final class MappableMongoTemplate implements MappableMongoOperations {
     }
 
     @Override
-    public <T> T queryForObject(Class<T> resultClass, DBObject queryObject) {
+    public <T> T queryForObject(Class<T> resultClass, DBObject query) {
         final MappableClassLayout classLayout = getLayout(resultClass);
         @SuppressWarnings("unchecked")
         final CursorMapper<T> cursorMapper = (CursorMapper<T>) classLayout.getCursorMapper();
-        return mo.queryForObject(classLayout.getCollectionName(), cursorMapper, queryObject);
+        return mo.queryForObject(classLayout.getCollectionName(), cursorMapper, query);
     }
 
     @Override
