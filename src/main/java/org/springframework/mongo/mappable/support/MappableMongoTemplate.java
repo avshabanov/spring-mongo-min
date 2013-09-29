@@ -64,7 +64,8 @@ public final class MappableMongoTemplate implements MappableMongoOperations {
                             throw new IllegalArgumentException(e);
                         }
                     }
-                });
+                }
+        );
     }
 
     public MappableMongoTemplate(Class<?> mappableBase) {
@@ -95,7 +96,7 @@ public final class MappableMongoTemplate implements MappableMongoOperations {
     @Override
     @SuppressWarnings("unchecked")
     public String insert(Object object) {
-        Assert.notNull(object, "Object can not be null");
+        Assert.notNull(object, "object can not be null");
         final MappableClassLayout classLayout = getLayout(object);
         return mo.insert(classLayout.getCollectionName(), classLayout.toDBObject(object));
     }
@@ -103,6 +104,7 @@ public final class MappableMongoTemplate implements MappableMongoOperations {
     @Override
     @SuppressWarnings("unchecked")
     public void update(Object object) {
+        Assert.notNull(object, "object can not be null");
         final MappableClassLayout classLayout = getLayout(object);
         if (!classLayout.hasMongoId()) {
             throw new IncorrectUpdateSemanticsDataAccessException("It is not possible to update object without inner ID");
@@ -127,6 +129,7 @@ public final class MappableMongoTemplate implements MappableMongoOperations {
         return mo.remove(classLayout.getCollectionName(), query).getN();
     }
 
+
     @Override
     public <T> T queryById(final Class<T> resultClass, String id) {
         final MappableClassLayout classLayout = getLayout(resultClass);
@@ -146,6 +149,24 @@ public final class MappableMongoTemplate implements MappableMongoOperations {
         @SuppressWarnings("unchecked")
         final CursorMapper<T> cursorMapper = (CursorMapper<T>) classLayout.getCursorMapper();
         return mo.query(classLayout.getCollectionName(), cursorMapper, query, orderBy);
+    }
+
+    @Override
+    public <T> List<T> query(Class<T> resultClass, String key, Object value) {
+        return query(resultClass, new BasicDBObject(key, value));
+    }
+
+    @Override
+    public <T> T queryForObject(Class<T> resultClass, String key, Object value) {
+        return queryForObject(resultClass, new BasicDBObject(key, value));
+    }
+
+    @Override
+    public <T> T queryForObject(Class<T> resultClass, DBObject query) {
+        final MappableClassLayout classLayout = getLayout(resultClass);
+        @SuppressWarnings("unchecked")
+        final CursorMapper<T> cursorMapper = (CursorMapper<T>) classLayout.getCursorMapper();
+        return mo.queryForObject(classLayout.getCollectionName(), cursorMapper, query);
     }
 
     @Override

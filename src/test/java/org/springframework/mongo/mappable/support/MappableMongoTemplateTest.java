@@ -5,6 +5,7 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.mongo.core.MongoOperations;
 import org.springframework.mongo.core.support.MongoTemplate;
 import org.springframework.mongo.mappable.MappableMongoOperations;
@@ -20,6 +21,7 @@ import java.util.Collections;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.springframework.mongo.support.MongoUtil.withId;
 
 @ContextConfiguration(classes = MappableMongoTemplateTest.Config.class)
 public final class MappableMongoTemplateTest extends MongoTestSupport {
@@ -87,6 +89,16 @@ public final class MappableMongoTemplateTest extends MongoTestSupport {
     }
 
     @Test
+    public void shouldQueryForObject() {
+        Profile profile = new Profile("bob", 36);
+        final String id = mmo.insert(profile);
+        profile = new Profile(id, profile);
+
+        assertEquals(profile, mmo.queryForObject(Profile.class, "name", profile.getName()));
+        assertEquals(profile, mmo.queryForObject(Profile.class, "age", profile.getAge()));
+    }
+
+    @Test
     public void shouldSaveObjectWithNontrivialFields() throws Exception {
         Msg msg = new Msg(MsgState.CREATED, new URL("http://site.com"), URI.create("urn:sample:srv"));
         final String id = mmo.insert(msg);
@@ -97,6 +109,42 @@ public final class MappableMongoTemplateTest extends MongoTestSupport {
         msg = new Msg(id, MsgState.SENT, null, null);
         mmo.update(msg);
         assertEquals(msg, mmo.queryById(Msg.class, id));
+    }
+
+    @Test
+    public void shouldNotRemoveObjectByUnsatisifiedQuery() {
+        final Profile profile = new Profile("bob", 36);
+        final String id = mmo.insert(profile);
+        mmo.remove(Profile.class, new BasicDBObject("name", profile.getName() + "2"));
+        assertEquals(new Profile(id, profile), mmo.queryForObject(Profile.class, withId(id)));
+
+        mmo.remove(Profile.class, new BasicDBObject("age", profile.getAge() + 1));
+        assertEquals(new Profile(id, profile), mmo.queryForObject(Profile.class,
+                new BasicDBObject("age", profile.getAge())));
+    }
+
+    @Test(expected = EmptyResultDataAccessException.class)
+    public void shouldRemoveObjectById() {
+        Profile profile = new Profile("bob", 36);
+        final String id = mmo.insert(profile);
+        mmo.remove(Profile.class, id);
+        mmo.queryForObject(Profile.class, withId(id));
+    }
+
+    @Test(expected = EmptyResultDataAccessException.class)
+    public void shouldRemoveObjectByField() {
+        Profile profile = new Profile("bob", 36);
+        final String id = mmo.insert(profile);
+        mmo.remove(Profile.class, new BasicDBObject("age", profile.getAge()));
+        mmo.queryForObject(Profile.class, withId(id));
+    }
+
+    @Test(expected = EmptyResultDataAccessException.class)
+    public void shouldRemoveObjectByTwoField() {
+        Profile profile = new Profile("bob", 36);
+        final String id = mmo.insert(profile);
+        mmo.remove(Profile.class, new BasicDBObject().append("age", profile.getAge()).append("name", profile.getName()));
+        mmo.queryForObject(Profile.class, withId(id));
     }
 
     @Configuration

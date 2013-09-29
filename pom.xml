@@ -4,7 +4,7 @@
 
     <groupId>org.springframework</groupId>
     <artifactId>spring-mongo-min</artifactId>
-    <version>0.05-SNAPSHOT</version>
+    <version>0.06</version>
     <packaging>jar</packaging>
     <name>Spring Minimal Mongo Support</name>
     <description>Minimal Mongo Support for Spring Framework</description>
@@ -111,4 +111,32 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Generate java sources -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals><goal>jar</goal></goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Generate javadoc sources -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals><goal>jar</goal></goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>

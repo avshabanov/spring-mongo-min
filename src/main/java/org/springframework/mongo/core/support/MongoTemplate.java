@@ -6,6 +6,7 @@ import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.mongo.core.CursorMapper;
 import org.springframework.mongo.core.MongoOperations;
 import org.springframework.mongo.support.MongoWriteOperation;
+import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
 import java.util.ArrayList;
@@ -49,6 +50,8 @@ public final class MongoTemplate implements MongoOperations {
 
     @Override
     public String insert(final String collectionName, final DBObject dbObject) {
+        Assert.notNull(collectionName, "collectionName can not be null");
+        Assert.notNull(dbObject, "dbObject can not be null");
         executeWriteOperation(new MongoWriteOperation() {
             @Override
             public WriteResult execute() {
@@ -60,6 +63,8 @@ public final class MongoTemplate implements MongoOperations {
 
     @Override
     public WriteResult update(final String collectionName, final DBObject query, final DBObject dbObject) {
+        Assert.notNull(query, "query can not be null");
+        Assert.notNull(dbObject, "dbObject can not be null");
         return executeWriteOperation(new MongoWriteOperation() {
             @Override
             public WriteResult execute() {
@@ -70,6 +75,7 @@ public final class MongoTemplate implements MongoOperations {
 
     @Override
     public WriteResult remove(final String collectionName, final DBObject query) {
+        Assert.notNull(query, "query can not be null");
         return executeWriteOperation(new MongoWriteOperation() {
             @Override
             public WriteResult execute() {
@@ -90,6 +96,7 @@ public final class MongoTemplate implements MongoOperations {
 
     @Override
     public <T> List<T> query(String collectionName, CursorMapper<T> mapper, DBObject query, DBObject orderBy) {
+        Assert.notNull(query, "query can not be null");
         final DBCursor cursor = getDb().getCollection(collectionName).find(query);
         if (orderBy != null) {
             cursor.sort(orderBy);
