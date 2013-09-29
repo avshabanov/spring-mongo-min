@@ -4,7 +4,7 @@
 
     <groupId>org.springframework</groupId>
     <artifactId>spring-mongo-min</artifactId>
-    <version>0.06</version>
+    <version>0.07</version>
     <packaging>jar</packaging>
     <name>Spring Minimal Mongo Support</name>
     <description>Minimal Mongo Support for Spring Framework</description>
