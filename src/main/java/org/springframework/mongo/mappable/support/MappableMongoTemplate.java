@@ -112,9 +112,19 @@ public final class MappableMongoTemplate implements MappableMongoOperations {
     }
 
     @Override
-    public void remove(Class<?> clazz, String id) {
+    public int remove(Class<?> clazz, String id) {
+        return remove(clazz, withId(id));
+    }
+
+    @Override
+    public int remove(Class<?> clazz, String fieldName, Object value) {
+        return remove(clazz, new BasicDBObject(fieldName, value));
+    }
+
+    @Override
+    public int remove(Class<?> clazz, DBObject query) {
         final MappableClassLayout classLayout = getLayout(clazz);
-        mo.remove(classLayout.getCollectionName(), withId(id));
+        return mo.remove(classLayout.getCollectionName(), query).getN();
     }
 
     @Override

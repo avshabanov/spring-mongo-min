@@ -18,6 +18,8 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 @ContextConfiguration(classes = MappableMongoTemplateTest.Config.class)
 public final class MappableMongoTemplateTest extends MongoTestSupport {
@@ -63,6 +65,25 @@ public final class MappableMongoTemplateTest extends MongoTestSupport {
         shelf = new Shelf(id, Collections.<Book>emptyList(), Collections.<String>emptyList(), null);
         mmo.update(shelf);
         assertEquals(shelf, mmo.queryById(Shelf.class, id));
+    }
+
+    @Test
+    public void shouldRemoveObjectByCustomField() {
+        Profile profile = new Profile("bob", 36);
+        mmo.insert(profile);
+        assertFalse(mmo.query(Profile.class, new BasicDBObject()).isEmpty());
+
+        // 1 field
+        assertEquals(1, mmo.remove(Profile.class, "name", profile.getName()));
+        assertTrue(mmo.query(Profile.class, new BasicDBObject()).isEmpty());
+
+        // insert again
+        mmo.insert(profile);
+        assertFalse(mmo.query(Profile.class, new BasicDBObject()).isEmpty());
+
+        // remove by 2 fields
+        assertEquals(1, mmo.remove(Profile.class, new BasicDBObject("name", profile.getName()).append("age", 36)));
+        assertTrue(mmo.query(Profile.class, new BasicDBObject()).isEmpty());
     }
 
     @Test
