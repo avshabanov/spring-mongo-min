@@ -1,12 +1,14 @@
 package org.springframework.mongo.mappable.support;
 
 import com.mongodb.BasicDBObject;
+import com.mongodb.DB;
 import com.mongodb.DBObject;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.BeanInitializationException;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.dao.IncorrectUpdateSemanticsDataAccessException;
 import org.springframework.mongo.core.CursorMapper;
 import org.springframework.mongo.core.MongoOperations;
+import org.springframework.mongo.core.support.MongoTemplate;
 import org.springframework.mongo.mappable.MappableMongoOperations;
 import org.springframework.mongo.mappable.object.MappableClassLayout;
 import org.springframework.util.Assert;
@@ -25,8 +27,26 @@ import static org.springframework.mongo.support.MongoUtil.*;
  * @author Alexander Shabanov
  */
 public final class MappableMongoTemplate implements MappableMongoOperations {
-    @Autowired
+
+    private DB db;
+
     private MongoOperations mo;
+
+    public DB getDb() {
+        return db;
+    }
+
+    public void setDb(DB db) {
+        this.db = db;
+    }
+
+    public MongoOperations getMongoOperations() {
+        return mo;
+    }
+
+    public void setMongoOperations(MongoOperations mongoOperations) {
+        this.mo = mongoOperations;
+    }
 
     private MappableObjectsConfig mappableObjectsConfig = new MappableObjectsConfig();
 
@@ -73,10 +93,24 @@ public final class MappableMongoTemplate implements MappableMongoOperations {
         setMappableBase(mappableBase);
     }
 
+    public MappableMongoTemplate(Class<?> mappableBase, DB db) {
+        this(mappableBase);
+        setDb(db);
+    }
+
     @PostConstruct
     public void init() {
         Assert.state(initialized, "Mappable base class should be initialized prior to construction");
         constructed = true;
+
+        if (getMongoOperations() == null) {
+            // no mongo operations
+            if (getDb() != null) {
+                setMongoOperations(new MongoTemplate(getDb()));
+            } else {
+                throw new BeanInitializationException("Neither mongOperations nor db property was set");
+            }
+        }
     }
 
     @Override

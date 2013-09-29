@@ -2,6 +2,7 @@ package org.springframework.mongo.core.support;
 
 import com.google.common.collect.ImmutableList;
 import com.mongodb.BasicDBObject;
+import com.mongodb.DB;
 import com.mongodb.DBObject;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,9 +55,12 @@ public final class MongoTemplateTest extends MongoTestSupport {
 
     @Configuration
     public static class Config {
+        @Autowired
+        private DB db;
+
         @Bean
         public MongoOperations mongoOperations() {
-            return new MongoTemplate();
+            return new MongoTemplate(db);
         }
     }
 

@@ -1,7 +1,6 @@
 package org.springframework.mongo.core.support;
 
 import com.mongodb.*;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.mongo.core.CursorMapper;
 import org.springframework.mongo.core.MongoOperations;
@@ -30,7 +29,6 @@ import static org.springframework.mongo.support.MongoUtil.extractId;
  * @author Alexander Shabanov
  */
 public final class MongoTemplate implements MongoOperations {
-    @Autowired
     private DB db;
 
     public DB getDb() {
@@ -39,6 +37,14 @@ public final class MongoTemplate implements MongoOperations {
 
     public void setDb(DB db) {
         this.db = db;
+    }
+
+    public MongoTemplate() {
+    }
+
+    public MongoTemplate(DB db) {
+        this();
+        setDb(db);
     }
 
     @PostConstruct

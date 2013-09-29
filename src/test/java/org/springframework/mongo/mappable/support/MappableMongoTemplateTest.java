@@ -1,13 +1,12 @@
 package org.springframework.mongo.mappable.support;
 
 import com.mongodb.BasicDBObject;
+import com.mongodb.DB;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.mongo.core.MongoOperations;
-import org.springframework.mongo.core.support.MongoTemplate;
 import org.springframework.mongo.mappable.MappableMongoOperations;
 import org.springframework.mongo.test.MongoTestSupport;
 import org.springframework.mongo.test.objects.*;
@@ -18,9 +17,7 @@ import java.net.URL;
 import java.util.Arrays;
 import java.util.Collections;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.springframework.mongo.support.MongoUtil.withId;
 
 @ContextConfiguration(classes = MappableMongoTemplateTest.Config.class)
@@ -149,14 +146,12 @@ public final class MappableMongoTemplateTest extends MongoTestSupport {
 
     @Configuration
     public static class Config {
-        @Bean
-        public MappableMongoOperations mappableMongoOperations() {
-            return new MappableMongoTemplate(TestDomainObject.class);
-        }
+        @Autowired
+        private DB db;
 
         @Bean
-        public MongoOperations mongoOperations() {
-            return new MongoTemplate();
+        public MappableMongoOperations mappableMongoOperations() {
+            return new MappableMongoTemplate(TestDomainObject.class, db);
         }
     }
 }
